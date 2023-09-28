@@ -22,6 +22,9 @@ ROBOTSTXT_OBEY = True
 FEED_FORMAT = "csv"
 
 FEED_URI = "scrapynews.csv"
+
+# scrapy crawl reuters -o scrapynews.csv  this command save data to csv file
+
 # Configure maximum concurrent requests performed by Scrapy (default: 16)
 #CONCURRENT_REQUESTS = 32
 
