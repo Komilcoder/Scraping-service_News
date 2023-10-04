@@ -1,6 +1,9 @@
 import scrapy
 from ..items import ScrapynewsItem
 from scrapy.loader import ItemLoader
+from scrapy.utils.defer import maybe_deferred_to_future
+from twisted.internet.defer import DeferredList
+from scrapy import Request
 
 
 class ReutersSpider(scrapy.Spider):
@@ -12,7 +15,7 @@ class ReutersSpider(scrapy.Spider):
         for url in self.start_urls:
             yield scrapy.Request(url=url, callback=self.parse)
 
-    def parse(self, response):
+    async def parse(self, response):
 
         news = response.css('div#news-list')
         parent_div = response.xpath('//div[@id="news-list"]')
@@ -20,22 +23,24 @@ class ReutersSpider(scrapy.Spider):
         child_div = parent_div.xpath('//div[@class="news"]')
         a_tags = child_div.xpath('.//a')
 
+        description = response.xpath('//div[@class="single-layout__center slc"]')
+        additional_request = Request("https://kun.uz/en/news/")
+        deferred = self.crawler.engine.download(additional_request)
+        additional_response = await maybe_deferred_to_future(deferred)
+        x = additional_response.css('div.single-layout__center slc').get()
+        print(x, "wwwwwwwwwwwwwwwww")
+
         for a_tag in a_tags:
-            href = a_tag.xpath('@href').extract_first()
             title = a_tag.xpath('text()').extract_first()
 
-        load_more_button = response.xpath('//div[@id="ias_trigger_1696323690503"]')
-        more_button = load_more_button.xpath('//div[@class="load-more__link"]')
-        if more_button:
-            yield scrapy.FormRequest.from_response(response, formdata={'button_id': 'ias_trigger_1696323690503'}, callback=self.parse)
+            news = {"title": title, 'description': additional_response.css('div.single-layout__center slc '
+                                                                           'div.single-content').get(), }
+            if title is not None and additional_response is not None:
+                yield news
+        load_more_button = response.xpath('//div[@class="top-news"]')
+        for load in load_more_button:
+            more_button = load.css('div.load-more a.load-more__link').attrib['href']
+            if more_button is not None:
+                yield response.follow(more_button, callback=self.parse)
 
 
-
-        # for new in news:
-        #     title = new.xpath("//span[@class='big-news__title']").get()
-        #     description = new.xpath("//span[@class='big-news__description']").get()
-        #     news_info = {
-        #         "title": title,
-        #         "description": description
-        #     }
-        #     yield news_info
