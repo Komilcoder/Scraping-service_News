@@ -10,5 +10,7 @@ from w3lib.html import remove_tags
 
 class ScrapynewsItem(scrapy.Item):
     # define the fields for your item here like:
-    # name = scrapy.Field()
-    pass
+    title = scrapy.Field()
+    url = scrapy.Field()
+    classification = scrapy.Field()
+
